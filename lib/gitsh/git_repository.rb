@@ -67,6 +67,12 @@ module Gitsh
       end
     end
 
+    def available_config_variables
+      git_output('config --list --name-only').lines.map do |line|
+        line.chomp.to_sym
+      end
+    end
+
     def config_color(name, default)
       git_output(
         "config --get-color #{Shellwords.escape(name)} #{Shellwords.escape(default)}"
