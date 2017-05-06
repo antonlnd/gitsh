@@ -1,0 +1,88 @@
+#!/usr/bin/env ruby
+
+require 'set'
+require 'bundler/setup'
+%w( lib ext ).each do |directory|
+  $LOAD_PATH.unshift(File.expand_path("../../#{directory}", __FILE__))
+end
+
+GITSH_CONFIG_DIRECTORY = File.expand_path('../../etc', __FILE__)
+
+require 'gitsh/environment'
+require 'gitsh/tab_completion/automaton_factory'
+
+class Gitsh::TabCompletion::Viz
+  def to_dot
+    %Q(digraph TabCompletion {
+      ranksep=3;
+      nodesep=3;
+      #{node_labels.join("\n  ")}
+      #{transitions.join("\n  ")}
+      #{free_transitions.join("\n  ")}
+    })
+  end
+
+  def summary
+    "#{node_labels.length} nodes\n"\
+      "#{transitions.length + free_transitions.length} edges"
+  end
+
+  private
+
+  def node_labels
+    @node_labels ||= states.map do |state|
+      '%s [ label=%s ];' % [state_name(state), state.send(:name).inspect]
+    end
+  end
+
+  def transitions
+    @transitions ||= states.inject([]) do |acc, state|
+      acc + state.send(:transitions).flat_map do |matcher, end_states|
+        end_states.map do |end_state|
+          '%s -> %s [ label=%s ];' % [
+            state_name(state),
+            state_name(end_state),
+            transition_label(matcher).inspect,
+          ]
+        end
+      end
+    end
+  end
+
+  def free_transitions
+    @free_transitions ||= states.inject([]) do |acc, state|
+      acc + state.send(:free_transitions).map do |end_state|
+        '%s -> %s;' % [
+          state_name(state),
+          state_name(end_state),
+        ]
+      end
+    end
+  end
+
+  def states
+    @states ||= ObjectSpace.each_object(Gitsh::TabCompletion::Automaton::State)
+  end
+
+  def state_name(state)
+    state.object_id
+  end
+
+  def transition_label(matcher)
+    case matcher
+    when Gitsh::TabCompletion::Matchers::TextMatcher
+      "\"#{matcher.send(:word)}\""
+    else
+      "$#{matcher.name}"
+    end
+  end
+end
+
+
+env = Gitsh::Environment.new
+Gitsh::TabCompletion::AutomatonFactory.build(env)
+
+viz = Gitsh::TabCompletion::Viz.new
+
+$stdout.puts viz.to_dot
+$stderr.puts viz.summary
