@@ -4,17 +4,16 @@ module Gitsh
   module TabCompletion
     module Matchers
       class CommandMatcher < BaseMatcher
-        def initialize(env, internal_command)
+        def initialize(env)
           @env = env
-          @internal_command = internal_command
         end
 
         private
 
-        attr_reader :env, :internal_command
+        attr_reader :env
 
         def all_completions
-          env.git_commands + env.git_aliases + internal_command.commands
+          env.git_commands
         end
       end
     end
