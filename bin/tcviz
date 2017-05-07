@@ -17,8 +17,8 @@ class Gitsh::TabCompletion::Viz
       ranksep=3;
       nodesep=3;
       #{node_labels.join("\n  ")}
-      #{transitions.join("\n  ")}
       #{free_transitions.join("\n  ")}
+      #{transitions.join("\n  ")}
     })
   end
 
