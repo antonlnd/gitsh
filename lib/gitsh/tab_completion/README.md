@@ -10,6 +10,9 @@ has typed so far.
 The basis of gitsh's tab completion system is a slightly extended
 Non-deterministic Finite Automaton (NFA).
 
+The NFA's state graph is loaded from configuration files that use a
+Domain-Specific Language (DSL) similar to regular expressions.
+
 ### Finite Automata
 
 In a typical NFA, the automaton consists of a set of states joined by
@@ -99,6 +102,30 @@ then hit <kbd>tab</kbd>. In this case, we'd pass `add` to the automaton and move
 from state `0` to state `4`. From state `4` the next thing we expect is a path,
 so we'd offer file paths from the current directory as completions.
 
+### Loading the state graph
+
+As you might imagine, the state graph for tab completing Git commands is fairly
+large. Instead of hard-coding this graph, we load it from configuration files
+written in a custom DSL.
+
+A global configuration file (in this repository's `etc` directory, and installed
+to `$(prefix)/etc/gitsh/completions`) provides standard completions for Git
+commands, and a user-specific configuration file (`$HOME/.gitsh_completions`)
+can optionally be added for custom completions, e.g. for a user's own Git
+aliases.
+
+Details of the DSL can be found in the gitsh\_completions(5) manual page in this
+repository's `man` directory.
+
+To help debug the state graph, the repository includes a visualisation tool.
+Running `bin/tcviz` will load the configuration files, and output the graph in
+[Graphviz's dot language][1]. Running this through Graphviz's dot(1) program
+produces an image file, e.g.
+
+    ./bin/tcviz | dot -Tsvg -o tab_completion.svg
+
+[1]: http://www.graphviz.org/content/dot-language
+
 ## Major components
 
 - `Gitsh::TabCompletion::Facade` provides a single interface to the rest of
@@ -123,3 +150,7 @@ so we'd offer file paths from the current directory as completions.
 
 - `Gitsh::TabCompletion::CommandCompleter` orchestrates the interaction of the
   various other parts.
+
+- `Gitsh::TabCompletion::DSL` contains various classes for loading the
+  automaton's state graph from configuration files. The `DSL` module acts as a
+  facade for the configuration loading system.
