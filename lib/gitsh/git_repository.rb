@@ -68,9 +68,8 @@ module Gitsh
     end
 
     def available_config_variables
-      git_output('config --list --name-only').lines.map do |line|
-        line.chomp.to_sym
-      end
+      modern_git_available_config_variables ||
+        old_git_available_config_variables
     end
 
     def config_color(name, default)
@@ -121,6 +120,21 @@ module Gitsh
       sha = git_output('rev-parse HEAD')
       unless sha.empty?
         "#{sha[0,7]}..."
+      end
+    end
+
+    def modern_git_available_config_variables
+      command = git_command("config --list --name-only")
+      out, _, status = Open3.capture3(command)
+
+      if status.success?
+        out.chomp.lines.map { |line| line.chomp.to_sym }
+      end
+    end
+
+    def old_git_available_config_variables
+      git_output('config --list').lines.map do |line|
+        line.split('=').first.to_sym
       end
     end
 
